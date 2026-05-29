@@ -1,0 +1,62 @@
+name: FastAPI CI/CD to Kubernetes (EKS)
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+
+# ---------------- CI: Build & Push Docker Image ----------------
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Run basic tests (optional)
+      run: |
+        echo "Running tests..."
+        # pytest can be added here if available
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build and Push Docker Image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ secrets.DOCKER_USERNAME }}/fastapi-app:latest
+
+
+# ---------------- CD: Deploy to Kubernetes (EKS) ----------------
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Configure Kubeconfig
+      run: |
+        echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > kubeconfig
+        export KUBECONFIG=$PWD/kubeconfig
+
+    - name: Deploy to Kubernetes
+      run: |
+        kubectl apply -f k8s/
+
+    - name: Restart Deployment (force new image pull)
+      run: |
+        kubectl rollout restart deployment fastapi-app
+
+    - name: Verify Deployment
+      run: |
+        kubectl get pods
+        kubectl get svc

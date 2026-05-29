@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevOps Monitoring Dashboard</title>
+
+    <style>
+
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+        }
+
+        body{
+            font-family: "Century Gothic", sans-serif;
+            background:
+                radial-gradient(circle at top,
+                #071d49 0%,
+                #02122f 40%,
+                #010713 100%);
+            color:white;
+            min-height:100vh;
+            padding:40px;
+        }
+
+        .container{
+            max-width:1450px;
+            margin:auto;
+        }
+
+        /* OUTER FRAME */
+
+        .frame{
+            border:1px solid rgba(0,153,255,0.25);
+            border-radius:32px;
+            padding:50px;
+            background:rgba(2,10,25,0.35);
+
+            box-shadow:
+                0 0 40px rgba(0,153,255,0.08);
+        }
+
+        /* HEADER */
+
+        .header{
+            text-align:center;
+            margin-bottom:45px;
+        }
+
+        .header h1{
+            font-size:72px;
+            font-weight:700;
+            color:white;
+
+            text-shadow:
+                0 0 20px rgba(0,153,255,0.45),
+                0 0 40px rgba(0,153,255,0.15);
+        }
+
+        .sub-title{
+            margin-top:12px;
+            color:#7fb0ff;
+            font-size:26px;
+            letter-spacing:0.5px;
+        }
+
+        /* DASHBOARD */
+
+        .dashboard{
+            display:grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap:24px;
+        }
+
+        /* CARD */
+
+        .card{
+            position:relative;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(12,26,55,0.95),
+                    rgba(8,18,38,0.92)
+                );
+
+            border:1px solid rgba(0,153,255,0.18);
+
+            border-radius:24px;
+            padding:28px;
+
+            min-height:180px;
+
+            backdrop-filter: blur(10px);
+
+            box-shadow:
+                0 0 18px rgba(0,153,255,0.10),
+                inset 0 0 12px rgba(255,255,255,0.02);
+
+            transition:all .35s ease;
+
+            overflow:hidden;
+        }
+
+        .card:hover{
+            transform:translateY(-6px);
+
+            box-shadow:
+                0 0 28px rgba(0,153,255,0.30),
+                0 0 50px rgba(0,153,255,0.08);
+        }
+
+        /* TOP GLOW BORDER */
+
+        .card::before{
+            content:"";
+            position:absolute;
+            top:0;
+            left:0;
+            width:100%;
+            height:5px;
+        }
+
+        .blue::before{
+            background:#00aaff;
+            box-shadow:0 0 15px #00aaff;
+        }
+
+        .purple::before{
+            background:#bb86fc;
+            box-shadow:0 0 15px #bb86fc;
+        }
+
+        .green::before{
+            background:#32ff7e;
+            box-shadow:0 0 15px #32ff7e;
+        }
+
+        .orange::before{
+            background:#ffb347;
+            box-shadow:0 0 15px #ffb347;
+        }
+
+        /* TEXT */
+
+        .label{
+            color:#9bbcff;
+            font-size:20px;
+            margin-bottom:18px;
+        }
+
+        .value{
+            font-size:52px;
+            font-weight:700;
+            line-height:1.2;
+        }
+
+        .hostname{
+            font-size:28px;
+            line-height:1.4;
+            word-break:break-word;
+        }
+
+        .time-value{
+            font-size:34px;
+            white-space: nowrap;
+        }
+
+        /* STATUS */
+
+        .status{
+            display:flex;
+            align-items:center;
+            color:#32ff7e;
+        }
+
+        .status-dot{
+            width:16px;
+            height:16px;
+            border-radius:50%;
+            background:#32ff7e;
+
+            margin-right:14px;
+
+            box-shadow:
+                0 0 12px #32ff7e,
+                0 0 25px #32ff7e;
+
+            animation:blink 1s infinite;
+        }
+
+        @keyframes blink{
+            50%{
+                opacity:.35;
+            }
+        }
+
+        /* RESPONSIVE */
+
+        @media(max-width:1200px){
+            .dashboard{
+                grid-template-columns: repeat(2,1fr);
+            }
+        }
+
+        @media(max-width:768px){
+
+            body{
+                padding:20px;
+            }
+
+            .frame{
+                padding:30px;
+            }
+
+            .dashboard{
+                grid-template-columns:1fr;
+            }
+
+            .header h1{
+                font-size:42px;
+            }
+
+            .sub-title{
+                font-size:18px;
+            }
+
+            .value{
+                font-size:38px;
+            }
+        }
+
+    </style>
+
+    <script>
+        setTimeout(() => {
+            location.reload();
+        }, 5000);
+    </script>
+
+</head>
+<body>
+
+<div class="container">
+
+    <div class="frame">
+
+        <div class="header">
+            <h1>🚀 DevOps Monitoring Dashboard</h1>
+
+            <div class="sub-title">
+                FastAPI | Docker | Kubernetes | Grafana | GitHub Actions
+            </div>
+        </div>
+
+        <div class="dashboard">
+
+            <div class="card blue">
+                <div class="label">
+                    CPU Usage
+                </div>
+
+                <div class="value">
+                    {{ cpu }}%
+                </div>
+            </div>
+
+            <div class="card purple">
+                <div class="label">
+                    Memory Usage
+                </div>
+
+                <div class="value">
+                    {{ memory }}%
+                </div>
+            </div>
+
+            <div class="card green">
+                <div class="label">
+                    Application Status
+                </div>
+
+                <div class="value status">
+                    <span class="status-dot"></span>
+                    {{ status }}
+                </div>
+            </div>
+
+            <div class="card orange">
+                <div class="label">
+                    Container Hostname
+                </div>
+
+                <div class="value hostname">
+                    {{ hostname }}
+                </div>
+            </div>
+
+            <div class="card blue">
+                <div class="label">
+                    Server Time
+                </div>
+
+                <div class="value time-value">
+                    {{ time }}
+                </div>
+            </div>
+
+            <div class="card purple">
+                <div class="label">
+                    Uptime
+                </div>
+
+                <div class="value">
+                    {{ uptime }}
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
