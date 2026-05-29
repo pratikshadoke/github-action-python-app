@@ -6,7 +6,7 @@ on:
 
 jobs:
 
-# ===================== CI: Build & Push =====================
+# ================= CI =================
   build:
     runs-on: ubuntu-latest
 
@@ -20,7 +20,7 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build & Push Docker Image
+    - name: Build & Push Image
       uses: docker/build-push-action@v5
       with:
         context: .
@@ -28,14 +28,14 @@ jobs:
         tags: ${{ secrets.DOCKER_USERNAME }}/fastapi-app:latest
 
 
-# ===================== CD: Deploy to K3s =====================
+# ================= CD =================
   deploy:
     needs: build
     runs-on: ubuntu-latest
 
     steps:
 
-    - name: Deploy to EC2 K3s Cluster
+    - name: Deploy to EC2 K3s
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.EC2_HOST }}
@@ -43,29 +43,18 @@ jobs:
         key: ${{ secrets.EC2_KEY }}
         script: |
 
-          echo "==================================="
-          echo "Starting Kubernetes Deployment"
-          echo "==================================="
+          echo "Deploying to Kubernetes..."
 
-          # Set kubeconfig (IMPORTANT FIX)
+          # IMPORTANT: use correct kubeconfig
           export KUBECONFIG=$HOME/.kube/config
 
-          echo "Checking cluster..."
-          kubectl get nodes
-
-          echo "Applying Kubernetes manifests..."
+          # Apply manifests from LOCAL EC2 folder OR pipeline injection
           kubectl apply -f k8s/
 
-          echo "Restarting deployment to pull latest image..."
+          # Restart deployment to pull latest image
           kubectl rollout restart deployment fastapi-app
 
-          echo "Waiting for rollout..."
+          # Verify
           kubectl rollout status deployment fastapi-app
-
-          echo "Pods:"
           kubectl get pods
-
-          echo "Services:"
           kubectl get svc
-
-          echo "Deployment Completed Successfully 🚀"
