@@ -6,19 +6,21 @@ on:
 
 jobs:
 
+# ===================== CI: Build & Push =====================
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
-    - name: Login Docker Hub
+    - name: Login to Docker Hub
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build & Push Image
+    - name: Build & Push Docker Image
       uses: docker/build-push-action@v5
       with:
         context: .
@@ -26,13 +28,14 @@ jobs:
         tags: ${{ secrets.DOCKER_USERNAME }}/fastapi-app:latest
 
 
+# ===================== CD: Deploy to K3s =====================
   deploy:
     needs: build
     runs-on: ubuntu-latest
 
     steps:
 
-    - name: Deploy to EC2 K3s
+    - name: Deploy to EC2 K3s Cluster
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.EC2_HOST }}
@@ -40,13 +43,29 @@ jobs:
         key: ${{ secrets.EC2_KEY }}
         script: |
 
-          echo "Deploying to Kubernetes (k3s)..."
+          echo "==================================="
+          echo "Starting Kubernetes Deployment"
+          echo "==================================="
 
-          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          # Set kubeconfig (IMPORTANT FIX)
+          export KUBECONFIG=$HOME/.kube/config
 
+          echo "Checking cluster..."
+          kubectl get nodes
+
+          echo "Applying Kubernetes manifests..."
           kubectl apply -f k8s/
 
+          echo "Restarting deployment to pull latest image..."
           kubectl rollout restart deployment fastapi-app
 
+          echo "Waiting for rollout..."
+          kubectl rollout status deployment fastapi-app
+
+          echo "Pods:"
           kubectl get pods
+
+          echo "Services:"
           kubectl get svc
+
+          echo "Deployment Completed Successfully 🚀"
