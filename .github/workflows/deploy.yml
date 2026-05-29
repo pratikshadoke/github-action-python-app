@@ -1,4 +1,4 @@
-name: FastAPI CI/CD to K3s (No SSH)
+name: FastAPI CI/CD to K3s (GitHub Actions kubectl)
 
 on:
   push:
@@ -35,6 +35,9 @@ jobs:
 
     steps:
 
+    - name: Checkout Code (IMPORTANT FIX)
+      uses: actions/checkout@v4
+
     - name: Setup kubectl
       uses: azure/setup-kubectl@v4
 
@@ -43,21 +46,20 @@ jobs:
         echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > kubeconfig
         export KUBECONFIG=$PWD/kubeconfig
 
+    - name: Verify k8s folder exists
+      run: |
+        ls -la
+        ls -la k8s/
+
     - name: Deploy to Kubernetes
       run: |
         export KUBECONFIG=$PWD/kubeconfig
 
-        echo "Applying Kubernetes manifests..."
         kubectl apply -f k8s/
 
-        echo "Restarting deployment..."
         kubectl rollout restart deployment fastapi-app
 
-        echo "Checking rollout..."
         kubectl rollout status deployment fastapi-app
 
-        echo "Pods:"
         kubectl get pods
-
-        echo "Services:"
         kubectl get svc
