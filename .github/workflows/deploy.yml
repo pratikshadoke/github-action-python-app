@@ -1,4 +1,4 @@
-name: FastAPI CI/CD to K3s on EC2
+name: FastAPI CI/CD to K3s (No SSH)
 
 on:
   push:
@@ -35,26 +35,29 @@ jobs:
 
     steps:
 
-    - name: Deploy to EC2 K3s
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ec2-user
-        key: ${{ secrets.EC2_KEY }}
-        script: |
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v4
 
-          echo "Deploying to Kubernetes..."
+    - name: Configure kubeconfig
+      run: |
+        echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > kubeconfig
+        export KUBECONFIG=$PWD/kubeconfig
 
-          # IMPORTANT: use correct kubeconfig
-          export KUBECONFIG=$HOME/.kube/config
+    - name: Deploy to Kubernetes
+      run: |
+        export KUBECONFIG=$PWD/kubeconfig
 
-          # Apply manifests from LOCAL EC2 folder OR pipeline injection
-          kubectl apply -f k8s/
+        echo "Applying Kubernetes manifests..."
+        kubectl apply -f k8s/
 
-          # Restart deployment to pull latest image
-          kubectl rollout restart deployment fastapi-app
+        echo "Restarting deployment..."
+        kubectl rollout restart deployment fastapi-app
 
-          # Verify
-          kubectl rollout status deployment fastapi-app
-          kubectl get pods
-          kubectl get svc
+        echo "Checking rollout..."
+        kubectl rollout status deployment fastapi-app
+
+        echo "Pods:"
+        kubectl get pods
+
+        echo "Services:"
+        kubectl get svc
