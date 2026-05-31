@@ -45,11 +45,21 @@ jobs:
       run: |
         echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > kubeconfig
         export KUBECONFIG=$PWD/kubeconfig
-
-    - name: Verify k8s folder exists
+    - name: Debug kubeconfig
       run: |
-        ls -la
-        ls -la k8s/
+        grep server kubeconfig
+        export KUBECONFIG=$PWD/kubeconfig
+        kubectl config view
+        - name: Verify k8s folder exists
+          run: |
+            ls -la
+            ls -la k8s/
+
+    - name: Test cluster connectivity
+      run: |
+        export KUBECONFIG=$PWD/kubeconfig
+        kubectl cluster-info
+        kubectl get nodes
 
     - name: Deploy to Kubernetes
       run: |
