@@ -1,75 +1,82 @@
-name: FastAPI CI/CD to K3s (GitHub Actions kubectl)
+name: FastAPI CI/CD to K3s
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
 
 jobs:
 
-# ================= CI =================
+  # ================= CI =================
+
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
 
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: Build & Push Image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/fastapi-app:latest
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Build & Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/fastapi-app:latest
 
-# ================= CD =================
+  # ================= CD =================
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
 
     steps:
 
-    - name: Checkout Code (IMPORTANT FIX)
-      uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: Setup kubectl
-      uses: azure/setup-kubectl@v4
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
 
-    - name: Configure kubeconfig
-      run: |
-        echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > kubeconfig
-        export KUBECONFIG=$PWD/kubeconfig
-    - name: Debug kubeconfig
-      run: |
-        grep server kubeconfig
-        export KUBECONFIG=$PWD/kubeconfig
-        kubectl config view
-        - name: Verify k8s folder exists
-          run: |
-            ls -la
-            ls -la k8s/
+      - name: Configure kubeconfig
+        run: |
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > kubeconfig
+          chmod 600 kubeconfig
 
-    - name: Test cluster connectivity
-      run: |
-        export KUBECONFIG=$PWD/kubeconfig
-        kubectl cluster-info
-        kubectl get nodes
+      - name: Debug kubeconfig
+        run: |
+          echo "===== KUBECONFIG SERVER ====="
+          grep server kubeconfig
 
-    - name: Deploy to Kubernetes
-      run: |
-        export KUBECONFIG=$PWD/kubeconfig
+      - name: Verify k8s folder exists
+        run: |
+          ls -la
+          ls -la k8s/
 
-        kubectl apply -f k8s/
+      - name: Test Cluster Connectivity
+        run: |
+          export KUBECONFIG=$PWD/kubeconfig
 
-        kubectl rollout restart deployment fastapi-app
+          kubectl cluster-info
+          kubectl get nodes
 
-        kubectl rollout status deployment fastapi-app
+      - name: Deploy to Kubernetes
+        run: |
+          export KUBECONFIG=$PWD/kubeconfig
 
-        kubectl get pods
-        kubectl get svc
+          kubectl apply -f k8s/
+
+          kubectl set image deployment/fastapi-app \
+            fastapi-app=${{ secrets.DOCKER_USERNAME }}/fastapi-app:latest
+
+          kubectl rollout status deployment/fastapi-app --timeout=180s
+
+          kubectl get pods -o wide
+          kubectl get svc
